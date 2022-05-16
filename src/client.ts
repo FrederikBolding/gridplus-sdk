@@ -37,7 +37,6 @@ import {
   isValidAssetPath,
   parseDER,
   parseLattice1Response,
-  promisifyCb,
   toPaddedDER,
   randomBytes,
   isUInt4,
@@ -115,7 +114,7 @@ export class Client {
     /** User can pass in previous state data to rehydrate connected session */
     stateData?: string;
     /** If true we will not retry if we get a wrong wallet error code */
-    skipRetryOnWrongWallet: boolean;
+    skipRetryOnWrongWallet?: boolean;
   }) {
     // Default state params
     // -----

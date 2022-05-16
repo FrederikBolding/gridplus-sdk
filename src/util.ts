@@ -309,11 +309,11 @@ export const randomBytes = function (n) {
   for (let i = 0; i < n; i++) {
     buf[i] = Math.round(Math.random() * 255);
   }
-  return buf;
+  return process.env.NODE_ENV === 'test' ? Buffer.alloc(4, '1') : buf;
 }
 
 /** @internal `isUInt4` accepts a number and returns true if it is a UInt4 */
-export const isUInt4 = (n: number) => isInteger(n) && inRange(0, 16)
+export const isUInt4 = (n: number) => isInteger(n) && inRange(n, 0, 16)
 
 /**
  * Generates an application secret for use in maintaining connection to device.

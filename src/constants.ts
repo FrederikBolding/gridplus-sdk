@@ -117,6 +117,13 @@ const responseCodes = {
 };
 
 /** @internal */
+const CURRENCIES = {
+  ETH: 'ETH',
+  BTC: 'BTC',
+  ETH_MSG: 'ETH_MSG',
+}
+
+/** @internal */
 const responseMsgs = {
   [responseCodes.RESP_SUCCESS]: 0x00,
   [responseCodes.RESP_ERR_INVALID_MSG]: 'Invalid request',
@@ -354,13 +361,13 @@ export const EXTERNAL = {
 };
 
 /** @internal */
-function getFwVersionConst (v) {
-  const c: any = {
+function getFwVersionConst (v: Buffer): FirmwareConstants {
+  const c: FirmwareConstants = {
     extraDataFrameSz: 0,
     extraDataMaxFrames: 0,
     genericSigning: {},
   };
-  function gte (v, exp) {
+  function gte (v: Buffer, exp: FirmwareArr): boolean {
     // Note that `v` fields come in as [fix|minor|major]
     return (
       v[2] > exp[0] ||
@@ -528,6 +535,9 @@ function getFwVersionConst (v) {
 // eslint-disable-next-line no-control-regex
 const ASCII_REGEX = /^[\x00-\x7F]+$/;
 
+/** @internal - Max number of addresses to fetch */
+const MAX_ADDR = 10;
+
 export {
   ASCII_REGEX,
   getFwVersionConst,
@@ -535,6 +545,8 @@ export {
   AES_IV,
   BIP_CONSTANTS,
   BASE_URL,
+  CURRENCIES,
+  MAX_ADDR,
   ENC_MSG_LEN,
   addressSizes,
   decResLengths,
