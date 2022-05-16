@@ -153,6 +153,12 @@ export const request = async ({
   timeout = defaultTimeout,
   retries = 3,
 }: RequestParams) => {
+  // TODO: duration/debugging 
+  // const duration = {
+  //   setupTime: 15,
+  //   responseTime: ,
+  //   decodeTime
+  // }
   const res = await superagent
     .post(url)
     .timeout(timeout)
