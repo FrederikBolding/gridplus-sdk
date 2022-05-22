@@ -1,94 +1,89 @@
 import { getP256KeyPair } from '../../util';
+import { EXTERNAL } from '../../constants';
 import {
   encodeConnectRequest,
   encodeGetAddressesRequest,
   encodePairRequest,
   encodeSignRequest,
 } from '../encoders';
-import { fwVersionsList, getFwVersionsList } from './utils/builders';
+import {
+  buildGetAddressesObject,
+  buildTransactionObject,
+  getFwVersionsList,
+} from './utils/builders';
 
-describe('Client', () => {
-  it('should test connect encoder', () => {
-    const privKey = Buffer.alloc(32, '1');
-    expect(privKey.toString()).toMatchSnapshot();
-    const key = getP256KeyPair(privKey);
-    const payload = encodeConnectRequest(key);
-    const payloadAsString = payload.toString('hex');
-    expect(payloadAsString).toMatchSnapshot();
-  });
-
-  it('should test pair encoder', () => {
-    const privKey = Buffer.alloc(32, '1');
-    expect(privKey.toString()).toMatchSnapshot();
-    const key = getP256KeyPair(privKey);
-    const payload = encodePairRequest(key, 'asdfasdf', 'asdfasdf');
-    const payloadAsString = payload.toString('hex');
-    expect(payloadAsString).toMatchSnapshot();
-  });
-
-  it('should test getAddresses encoder', () => {
-    const payload = encodeGetAddressesRequest({
-      startPath: [0x80000000 + 44, 0x80000000 + 60, 0x80000000, 0, 0],
-      n: 1,
-      flag: 1,
-      fwVersion: Buffer.from([0, 12, 0]),
-      wallet: {
-        uid: Buffer.from('test'),
-        name: Buffer.from('test'),
-        capabilities: 1,
-        external: true,
-      },
+describe('encoders', () => {
+  describe('Client.connect()', () => {
+    test('should test connect encoder', () => {
+      const privKey = Buffer.alloc(32, '1');
+      expect(privKey.toString()).toMatchSnapshot();
+      const key = getP256KeyPair(privKey);
+      const payload = encodeConnectRequest(key);
+      const payloadAsString = payload.toString('hex');
+      expect(payloadAsString).toMatchSnapshot();
     });
-    const payloadAsString = payload.toString('hex');
-    expect(payloadAsString).toMatchSnapshot();
   });
 
-  it.each(getFwVersionsList())('should test sign encoder with firmware v%d.%d.%d', (major, minor, patch) => {
-    const payload = encodeSignRequest({
-      data: {
-        to: '0xc0c8f96C2fE011cc96770D2e37CfbfeAFB585F0e',
-        from: '0xc0c8f96C2fE011cc96770D2e37CfbfeAFB585F0e',
-        value: 0x80000000,
-        data: 0x0,
-        signerPath: [0x80000000 + 44, 0x80000000 + 60, 0x80000000, 0, 0],
-        nonce: 0x80000000,
-        gasLimit: 0x80000000,
-        gasPrice: 0x80000000,
-      },
-      currency: 'ETH',
-      fwVersion: Buffer.from([patch, minor, major]),
-      wallet: {
-        uid: Buffer.from('test'),
-        name: Buffer.from('test'),
-        capabilities: 1,
-        external: true,
-      },
+  describe('Client.pair()', () => {
+    test('should test pair encoder', () => {
+      const privKey = Buffer.alloc(32, '1');
+      expect(privKey.toString()).toMatchSnapshot();
+      const key = getP256KeyPair(privKey);
+      const payload = encodePairRequest(key, 'testtest', 'testtest');
+      const payloadAsString = payload.toString('hex');
+      expect(payloadAsString).toMatchSnapshot();
     });
-    const payloadAsString = payload.toString('hex');
-    expect(payloadAsString).toMatchSnapshot();
   });
-  // it('should test sign encoder for fw v0.15.0', () => {
-  //   const payload = encodeSignRequest({
-  //     data: {
-  //       to: '0xc0c8f96C2fE011cc96770D2e37CfbfeAFB585F0e',
-  //       from: '0xc0c8f96C2fE011cc96770D2e37CfbfeAFB585F0e',
-  //       value: 0x80000000,
-  //       data: 0x0,
-  //       signerPath: [0x80000000 + 44, 0x80000000 + 60, 0x80000000, 0, 0],
-  //       nonce: 0x80000000,
-  //       gasLimit: 0x80000000,
-  //       gasPrice: 0x80000000,
-  //     },
-  //     currency: 'ETH',
-  //     fwVersion: Buffer.from([0, 15, 0]),
-  //     wallet: {
-  //       uid: Buffer.from('test'),
-  //       name: Buffer.from('test'),
-  //       capabilities: 1,
-  //       external: true,
-  //     },
-  //   });
-  //   const payloadAsString = payload.toString('hex');
-  //   expect(payloadAsString).toMatchSnapshot();
-  // });
+
+  describe('Client.getAddresses()', () => {
+    test('encodeGetAddressesRequest with default flag', () => {
+      const mockObject = buildGetAddressesObject({});
+      const payload = encodeGetAddressesRequest(mockObject);
+      const payloadAsString = payload.toString('hex');
+      expect(payloadAsString).toMatchSnapshot();
+    });
+
+    test('encodeGetAddressesRequest with ED25519_PUB', () => {
+      const mockObject = buildGetAddressesObject({
+        flag: EXTERNAL.GET_ADDR_FLAGS.ED25519_PUB,
+      });
+      const payload = encodeGetAddressesRequest(mockObject);
+      const payloadAsString = payload.toString('hex');
+      expect(payloadAsString).toMatchSnapshot();
+    });
+
+    test('encodeGetAddressesRequest with SECP256K1_PUB', () => {
+      const mockObject = buildGetAddressesObject({
+        flag: EXTERNAL.GET_ADDR_FLAGS.SECP256K1_PUB,
+      });
+      const payload = encodeGetAddressesRequest(mockObject);
+      const payloadAsString = payload.toString('hex');
+      expect(payloadAsString).toMatchSnapshot();
+    });
+
+    test('encodeGetAddressesRequest should throw with invalid startPath on old firmware', () => {
+      const startPath = [0x80000000 + 44, 0x80000000 + 60, 0, 0, 0, 0, 0]
+      const fwVersion = Buffer.from([0, 0, 0])
+      const testEncodingFunction = () =>
+        encodeGetAddressesRequest(
+          buildGetAddressesObject({ startPath, fwVersion }),
+        );
+      expect(testEncodingFunction).toThrowError('derivation paths with 5 indices');
+    });
+  });
+
+  describe('Client.sign()', () => {
+    test.each(getFwVersionsList())(
+      'should test sign encoder with firmware v%d.%d.%d',
+      (major, minor, patch) => {
+        const payload = encodeSignRequest(
+          buildTransactionObject({
+            fwVersion: Buffer.from([patch, minor, major]),
+          }),
+        );
+        const payloadAsString = payload.toString('hex');
+        expect(payloadAsString).toMatchSnapshot();
+      },
+    );
+  });
 });

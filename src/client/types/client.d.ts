@@ -1,4 +1,4 @@
-import { CURRENCIES } from '../constants';
+import { CURRENCIES, encReqCodes } from '../../constants';
 
 type Currency = keyof typeof CURRENCIES
 
@@ -6,6 +6,9 @@ interface SigningData {
   data: any;
   currency: Currency;
 }
+
+type EncryptionRequestCodeKeys = keyof typeof encReqCodes;
+type EncryptionRequestCodes = typeof encReqCodes[EncryptionRequestCodeKeys];
 
 interface Wallet {
   /** 32 byte id */
@@ -23,18 +26,11 @@ interface ActiveWallets {
   external: Wallet;
 }
 
-interface GetAddressesParams {
-  startPath: number[];
-  n: number;
-  flag?: number;
-}
-
-interface EncodeGetAddressesRequestParams {
-  fwVersion: any;
-  startPath: number[];
-  n: number;
-  wallet: Wallet;
-  flag: number;
+interface EncryptRequestParams {
+  payload: Buffer;
+  requestCode: EncryptionRequestCodes;
+  ephemeralPubKey: Buffer;
+  sharedSecret: Buffer;
 }
 
 interface EncodeSignRequestParams {

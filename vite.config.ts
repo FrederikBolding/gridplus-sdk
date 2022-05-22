@@ -8,5 +8,7 @@ export default defineConfig({
     },
     globals: true,
     testTimeout: 100000,
+    setupFiles: ['./src/client/__test__/__mocks__/setup.ts'],
+
   },
 });

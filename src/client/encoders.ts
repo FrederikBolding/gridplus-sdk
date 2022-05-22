@@ -2,16 +2,12 @@ import bitwise from 'bitwise';
 import { Byte, UInt4 } from 'bitwise/types';
 //@ts-expect-error - type mismatch
 import { KeyPair } from 'elliptic';
-import {
-  deviceCodes,
-  EXTERNAL,
-  getFwVersionConst
-} from '../constants';
+import { deviceCodes, EXTERNAL, getFwVersionConst } from '../constants';
 import { generateAppSecret, isValidAssetPath, toPaddedDER } from '../util';
 import { buildTransaction } from './shared';
-import { EncodeGetAddressesRequestParams, EncodeSignRequestParams } from './types/client';
+import { EncodeSignRequestParams } from './types/client';
 import { buildRequest, getPubKeyBytes } from './utilities';
-import { validateWallet } from './validators';
+import { validateWallet } from './validationFunctions';
 
 export const encodeConnectRequest = (key: KeyPair) => {
   const deviceCode = deviceCodes.CONNECT;
@@ -120,10 +116,7 @@ export const encodeSignRequest = ({
   // Build the signing request payload to send to the device. If we catch bad params, return an
   // error instead
   data = { fwConstants, ...data };
-  const req = buildTransaction({ data, currency, fwConstants })
-  // if (req && req.err) {
-  //   throw new Error(req.err);
-  // }
+  const req = buildTransaction({ data, currency, fwConstants });
   if (req.payload.length > fwConstants.reqMaxDataSz) {
     throw new Error('Transaction is too large');
   }
@@ -143,12 +136,12 @@ export const encodeSignRequest = ({
   // Copy request schema (e.g. ETH or BTC transfer)
   payload.writeUInt8(schema, off);
   off += 1;
-  const validWallet = validateWallet(wallet)
+  const validWallet = validateWallet(wallet);
   // Copy the wallet UID
   validWallet.uid?.copy(payload, off);
   off += validWallet.uid?.length ?? 0;
   // Build data based on the type of request Copy the payload of the request
   reqPayload.copy(payload, off);
   // Construct the encrypted request and send it
-  return payload
+  return payload;
 };

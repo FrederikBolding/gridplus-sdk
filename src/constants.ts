@@ -82,7 +82,7 @@ const encReqCodes = {
   GET_DECODERS: 10,
   REMOVE_DECODERS: 11,
   TEST: 12,
-};
+} as const;
 
 /** @internal */
 const messageConstants = {

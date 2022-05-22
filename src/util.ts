@@ -26,12 +26,12 @@ let ec;
 //--------------------------------------------------
 
 /** @internal Parse a response from the Lattice1 */
-export const parseLattice1Response = function (r) {
+export const parseLattice1Response = function (response: string) {
   const parsed: any = {
     err: null,
     data: null,
   };
-  const b = Buffer.from(r, 'hex');
+  const b = Buffer.from(response, 'hex');
   let off = 0;
 
   // Get protocol version
@@ -105,7 +105,7 @@ export const toPaddedDER = function (sig) {
 // TRANSACTION UTILS
 //--------------------------------------------------
 /** @internal */
-export const isValidAssetPath = function (path, fwConstants) {
+export const isValidAssetPath = function (path: number[], fwConstants: FirmwareConstants) {
   const allowedPurposes = [
     PURPOSES.ETH,
     PURPOSES.BTC_LEGACY,

@@ -5,22 +5,22 @@ export const decryptGetAddressesResponse = (
   response: any,
   sharedSecret: Buffer,
 ) => {
-  const { decryptedData, ephemeralPub } = decryptResponse(
+  const { decryptedData, newEphemeralPub } = decryptResponse(
     response,
     decResLengths.getAddresses,
     sharedSecret,
   );
-  return { decryptedData, ephemeralPub };
+  return { decryptedData, newEphemeralPub };
 };
 
 export const decryptSignResponse = (
   response: any,
   sharedSecret: Buffer,
 ) => {
-  const { decryptedData, ephemeralPub } = decryptResponse(
+  const { decryptedData, newEphemeralPub } = decryptResponse(
     response,
     decResLengths.sign,
     sharedSecret,
   );
-  return { decryptedData, ephemeralPub };
+  return { decryptedData, newEphemeralPub };
 };

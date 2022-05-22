@@ -1,7 +1,11 @@
 import { encReqCodes } from '../constants';
 import { encryptRequest } from './shared';
 
-export const encryptPairRequest = (payload, ephemeralPubKey, sharedSecret) => {
+export const encryptPairRequest = (
+  payload: Buffer,
+  ephemeralPubKey: Buffer,
+  sharedSecret: Buffer,
+) => {
   return encryptRequest({
     requestCode: encReqCodes.FINALIZE_PAIRING,
     payload,
@@ -11,9 +15,9 @@ export const encryptPairRequest = (payload, ephemeralPubKey, sharedSecret) => {
 };
 
 export const encryptGetAddressesRequest = (
-  payload,
-  ephemeralPubKey,
-  sharedSecret,
+  payload: Buffer,
+  ephemeralPubKey: Buffer,
+  sharedSecret: Buffer,
 ) => {
   return encryptRequest({
     requestCode: encReqCodes.GET_ADDRESSES,
@@ -23,7 +27,11 @@ export const encryptGetAddressesRequest = (
   });
 };
 
-export const encryptSignRequest = (payload, ephemeralPubKey, sharedSecret) => {
+export const encryptSignRequest = (
+  payload: Buffer,
+  ephemeralPubKey: Buffer,
+  sharedSecret: Buffer,
+) => {
   return encryptRequest({
     requestCode: encReqCodes.SIGN_TRANSACTION,
     payload,

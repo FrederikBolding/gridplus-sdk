@@ -7,42 +7,40 @@ import {
   decodeConnectResponse,
   decodeGetAddresses,
   decodePairResponse,
-  decodeSignResponse
+  decodeSignResponse,
 } from './decoders';
 import { decryptGetAddressesResponse, decryptSignResponse } from './decrypters';
 import {
   encodeConnectRequest,
   encodeGetAddressesRequest,
   encodePairRequest,
-  encodeSignRequest
+  encodeSignRequest,
 } from './encoders';
 import {
   encryptGetAddressesRequest,
   encryptPairRequest,
-  encryptSignRequest
+  encryptSignRequest,
 } from './encrypters';
 import { doesFetchWalletsOnLoad } from './predicates';
 import {
   requestConnect,
   requestGetAddresses,
   requestPair,
-  requestSign
+  requestSign,
 } from './requests';
-import {
-  ActiveWallets, GetAddressesParams,
-  SigningData
-} from './types/client';
+import { ActiveWallets, SigningData } from './types/client';
 import {
   validateAppName,
-  validateDeviceId,
   validateFwVersion,
-  validateIsUInt4,
-  validateNAddresses,
-  validateStartPath,
   validateUrl,
   validateValueExists,
-  validateWallet
+  validateWallet,
+} from './validationFunctions';
+import {
+  validateConnectRequest,
+  validateGetAddressesRequest,
 } from './validators';
+
 const EMPTY_WALLET_UID = Buffer.alloc(32);
 
 /**
@@ -71,7 +69,16 @@ export class Client {
   /** The ID of the connected Lattice */
   private deviceId: string | null;
   /** Information about the current wallet. Should be null unless we know a wallet is present */
-  private activeWallets: ActiveWallets;
+  private activeWallets: ActiveWallets = {
+    internal: {
+      uid: EMPTY_WALLET_UID,
+      external: false,
+    },
+    external: {
+      uid: EMPTY_WALLET_UID,
+      external: true,
+    },
+  };
 
   /**
    * @param params - Parameters are passed as an object.
@@ -85,28 +92,16 @@ export class Client {
     retryCount = 3,
     skipRetryOnWrongWallet = false,
   ) {
-    validateAppName(name);
-
+    this.name = validateAppName(name);
     this.baseUrl = baseUrl;
     this.ephemeralPub = null;
     this.deviceId = null;
     this.isPaired = false;
-    this.name = name;
     this.timeout = timeout;
     this.retryCount = retryCount;
     this.skipRetryOnWrongWallet = skipRetryOnWrongWallet;
     this.privKey = privKey;
     this.key = getP256KeyPair(this.privKey);
-    this.activeWallets = {
-      internal: {
-        uid: EMPTY_WALLET_UID,
-        external: false,
-      },
-      external: {
-        uid: EMPTY_WALLET_UID,
-        external: true,
-      },
-    };
 
     /** The user may pass in state data to rehydrate a session that was previously cached */
     if (stateData) {
@@ -163,23 +158,28 @@ export class Client {
   }
 
   /**
-   * `connect` will attempt to contact a device based on its deviceId. The response should include
+   * `connect` will attempt to contact a device based on its `deviceId`. The response should include
    * an ephemeral public key, which is used to pair with the device in a later request.
    * @category Lattice
    */
-  public async connect (deviceId: string) {
-    validateDeviceId(deviceId);
+  public async connect (id: string) {
+    const { deviceId, key, baseUrl } = validateConnectRequest({
+      deviceId: id,
+      key: this.key,
+      baseUrl: this.baseUrl,
+    });
 
-    const payload = await encodeConnectRequest(this.key);
+    const payload = await encodeConnectRequest(key);
 
-    const response = await requestConnect(payload, this.baseUrl);
-    const { isPaired, fwVersion, activeWallets } = await decodeConnectResponse(
+    const response = await requestConnect(payload, baseUrl);
+
+    const { isPaired, fwVersion, activeWallets, ephemeralPub } = await decodeConnectResponse(
       response,
-      this.key,
+      key,
     );
 
-    // If the user passes in a device ID, connect to that device and save the new ID for future use.
     this.deviceId = deviceId;
+    this.ephemeralPub = ephemeralPub
     this.url = `${this.baseUrl}/${deviceId}`;
     this.isPaired = isPaired;
     this.fwVersion = fwVersion;
@@ -205,7 +205,7 @@ export class Client {
    */
   public async pair (pairingSecret: string) {
     const name = validateAppName(this.name);
-    const url = validateUrl(this.url)
+    const url = validateUrl(this.url);
 
     const payload = await encodePairRequest(this.key, pairingSecret, name);
 
@@ -225,7 +225,6 @@ export class Client {
 
     // Try to get the active wallet once pairing is successful
     await this.fetchActiveWallet();
-
     return this.hasActiveWallet();
   }
 
@@ -240,12 +239,17 @@ export class Client {
     n,
     flag = 0,
   }: GetAddressesParams): Promise<Buffer[]> {
-    validateStartPath(startPath);
-    validateNAddresses(n);
-    validateIsUInt4(flag);
-    const url = validateUrl(this.url)
-    const fwVersion = validateFwVersion(this.fwVersion)
-    const wallet = validateWallet(this.activeWallet);
+    const { url, fwVersion, wallet, ephemeralPub, sharedSecret } =
+      validateGetAddressesRequest({
+        startPath,
+        n,
+        flag,
+        url: this.url,
+        fwVersion: this.fwVersion,
+        wallet: this.activeWallet,
+        ephemeralPub: this.ephemeralPub,
+        sharedSecret: this.sharedSecret,
+      });
 
     const payload = encodeGetAddressesRequest({
       startPath,
@@ -257,23 +261,19 @@ export class Client {
 
     const encryptedPayload = encryptGetAddressesRequest(
       payload,
-      this.ephemeralPub,
-      this.sharedSecret,
+      ephemeralPub,
+      sharedSecret,
     );
 
-    const encryptedResponse = await requestGetAddresses(
-      encryptedPayload,
-      url,
-    );
+    const encryptedResponse = await requestGetAddresses(encryptedPayload, url);
 
-    const { decryptedData, ephemeralPub } = decryptGetAddressesResponse(
+    const { decryptedData, newEphemeralPub } = decryptGetAddressesResponse(
       encryptedResponse,
-      this.sharedSecret,
+      sharedSecret,
     );
-
-    this.ephemeralPub = ephemeralPub;
-
     const data = decodeGetAddresses(decryptedData, flag);
+
+    this.ephemeralPub = newEphemeralPub;
 
     return data;
   }
@@ -285,8 +285,8 @@ export class Client {
    */
   public async sign ({ data, currency }: SigningData): Promise<SignData> {
     validateValueExists({ data });
-    const url = validateUrl(this.url)
-    const fwVersion = validateFwVersion(this.fwVersion)
+    const url = validateUrl(this.url);
+    const fwVersion = validateFwVersion(this.fwVersion);
     const wallet = validateWallet(this.activeWallet);
 
     const payload = encodeSignRequest({
@@ -432,5 +432,4 @@ export class Client {
     const decrypted = this._handleEncResponse(res, decResLengths.test);
     return decrypted.slice(65); // remove ephem pub
   }
-
 }

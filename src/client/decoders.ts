@@ -32,6 +32,7 @@ export const decodeConnectResponse = (
   isPaired: boolean;
   fwVersion: Buffer;
   activeWallets: ActiveWallets | undefined;
+  ephemeralPub: Buffer;
 } => {
   let off = 0;
   const isPaired = res.readUInt8(off) === messageConstants.PAIRED;
@@ -63,10 +64,10 @@ export const decodeConnectResponse = (
       throw new Error('Failed to connect to Lattice.');
     }
     const activeWallets = parseWallets(decWalletData);
-    return { isPaired, fwVersion, activeWallets };
+    return { isPaired, fwVersion, activeWallets, ephemeralPub };
   }
   // return the state of our pairing
-  return { isPaired, fwVersion, activeWallets: undefined };
+  return { isPaired, fwVersion, activeWallets: undefined, ephemeralPub };
 };
 
 /**

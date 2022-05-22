@@ -18,12 +18,8 @@ import {
   randomBytes,
 } from '../util';
 import { shouldUseEVMLegacyConverter } from './predicates';
-import { Currency, RequestParams } from './types/client';
-import {
-  validateChecksum,
-  validateRequestError,
-  validateResponse,
-} from './validators';
+import { Currency, EncryptRequestParams, RequestParams } from './types/client';
+import { validateRequestError, validateResponse, validateChecksum } from './validationFunctions';
 
 /**
  * Build a request to send to the device.
@@ -67,7 +63,7 @@ export const encryptRequest = ({
   requestCode,
   ephemeralPubKey,
   sharedSecret,
-}) => {
+}: EncryptRequestParams) => {
   // Get the ephemeral id - all encrypted requests require there to be an ephemeral public key in
   //order to send
 
@@ -108,10 +104,10 @@ export const buildTransaction = ({
   // general signing requests for newer firmware versions. EIP1559 and EIP155 legacy
   // requests will convert, but others may not.
   if (currency === 'ETH' && shouldUseEVMLegacyConverter(fwConstants)) {
-    console.warn(
-      'Using the legacy ETH signing path. This will soon be deprecated. ' +
-      'Please switch to general signing request.',
-    );
+    // console.warn(
+    //   'Using the legacy ETH signing path. This will soon be deprecated. ' +
+    //   'Please switch to general signing request.',
+    // );
     let payload;
     try {
       payload = ethereum.ethConvertLegacyToGenericReq(data);
@@ -147,6 +143,13 @@ const defaultTimeout = {
   deadline: 60000, // but allow 1 minute for the user to accept
 };
 
+interface LatticeRequest extends superagent.Response {
+  body: {
+    status: number;
+    message: string;
+  };
+}
+
 export const request = async ({
   url,
   payload,
@@ -159,16 +162,14 @@ export const request = async ({
   //   responseTime: ,
   //   decodeTime
   // }
-  const res = await superagent
+  const res: LatticeRequest | void = await superagent
     .post(url)
     .timeout(timeout)
-    //@ts-expect-error - TODO: fix bad types
-    .retries(retries)
+    .retry(retries)
     .send({ data: payload })
     .catch((err: LatticeError) => {
       validateRequestError(err);
     });
-
   // Handle formatting or generic HTTP errors
   if (!res || !res.body) {
     throw new Error(`Invalid response:  ${res}`);
@@ -192,7 +193,7 @@ export const decryptResponse = (
   encryptedResponse: any, //TODO: add type for responses
   length: number,
   sharedSecret: Buffer,
-): { decryptedData: Buffer; ephemeralPub: Buffer } => {
+): { decryptedData: Buffer, newEphemeralPub: Buffer } => {
   // Decrypt response
   const encData = encryptedResponse.slice(0, ENC_MSG_LEN);
   const decryptedData = aes256_decrypt(encData, sharedSecret);
@@ -202,10 +203,10 @@ export const decryptResponse = (
   // length does not include a 65-byte pubkey that prefixes each response
   length += 65;
 
-  validateChecksum(encryptedResponse, length);
+  // validateChecksum(encryptedResponse, length);
 
   // First 65 bytes is the next ephemeral pubkey
   const pub = decryptedData.slice(0, 65).toString('hex');
-  const ephemeralPub = getP256KeyPairFromPub(pub);
-  return { decryptedData, ephemeralPub };
+  const newEphemeralPub = getP256KeyPairFromPub(pub);
+  return { decryptedData, newEphemeralPub };
 };
