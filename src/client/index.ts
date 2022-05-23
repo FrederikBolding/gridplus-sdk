@@ -5,11 +5,16 @@ import { SignData } from '../types/client';
 import { getP256KeyPair, getP256KeyPairFromPub, randomBytes } from '../util';
 import {
   decodeConnectResponse,
+  decodeFetchActiveWalletResponse,
   decodeGetAddresses,
   decodePairResponse,
   decodeSignResponse,
 } from './decoders';
-import { decryptGetAddressesResponse, decryptSignResponse } from './decrypters';
+import {
+  decryptGetAddressesResponse,
+  decryptSignResponse,
+  decryptFetchActiveWalletResponse,
+} from './decrypters';
 import {
   encodeConnectRequest,
   encodeGetAddressesRequest,
@@ -17,6 +22,7 @@ import {
   encodeSignRequest,
 } from './encoders';
 import {
+  encryptFetchActiveWallet,
   encryptGetAddressesRequest,
   encryptPairRequest,
   encryptSignRequest,
@@ -24,12 +30,14 @@ import {
 import { doesFetchWalletsOnLoad } from './predicates';
 import {
   requestConnect,
+  requestFetchActiveWallets,
   requestGetAddresses,
   requestPair,
   requestSign,
 } from './requests';
 import { ActiveWallets, SigningData } from './types/client';
 import {
+  validateActiveWallets,
   validateAppName,
   validateFwVersion,
   validateUrl,
@@ -38,10 +46,11 @@ import {
 } from './validationFunctions';
 import {
   validateConnectRequest,
+  validateFetchActiveWallet,
   validateGetAddressesRequest,
 } from './validators';
-
-const EMPTY_WALLET_UID = Buffer.alloc(32);
+import { EMPTY_WALLET_UID } from './shared';
+import { DEFAULT_ACTIVE_WALLETS } from './constants';
 
 /**
  * `Client` is a class-based interface for managing a Lattice device.
@@ -69,16 +78,7 @@ export class Client {
   /** The ID of the connected Lattice */
   private deviceId: string | null;
   /** Information about the current wallet. Should be null unless we know a wallet is present */
-  private activeWallets: ActiveWallets = {
-    internal: {
-      uid: EMPTY_WALLET_UID,
-      external: false,
-    },
-    external: {
-      uid: EMPTY_WALLET_UID,
-      external: true,
-    },
-  };
+  private activeWallets: ActiveWallets = DEFAULT_ACTIVE_WALLETS
 
   /**
    * @param params - Parameters are passed as an object.
@@ -173,13 +173,11 @@ export class Client {
 
     const response = await requestConnect(payload, baseUrl);
 
-    const { isPaired, fwVersion, activeWallets, ephemeralPub } = await decodeConnectResponse(
-      response,
-      key,
-    );
+    const { isPaired, fwVersion, activeWallets, ephemeralPub } =
+      await decodeConnectResponse(response, key);
 
     this.deviceId = deviceId;
-    this.ephemeralPub = ephemeralPub
+    this.ephemeralPub = ephemeralPub;
     this.url = `${this.baseUrl}/${deviceId}`;
     this.isPaired = isPaired;
     this.fwVersion = fwVersion;
@@ -391,6 +389,40 @@ export class Client {
     }
   }
 
+  /**
+   * Fetch the active wallet in the device.
+   * @returns callback with an error or null
+   */
+  public async fetchActiveWallet (): Promise<ActiveWallets> {
+    const { url, ephemeralPub, sharedSecret } = validateFetchActiveWallet({
+      url: this.url,
+      ephemeralPub: this.ephemeralPub,
+      sharedSecret: this.sharedSecret,
+    });
+
+    const payload = encryptFetchActiveWallet(ephemeralPub, sharedSecret);
+
+    const encryptedResponse = await requestFetchActiveWallets(payload, url)
+      .catch(err => {
+        this.resetActiveWallets();
+        throw err
+      })
+
+    const { decryptedData, newEphemeralPub } = decryptFetchActiveWalletResponse(
+      encryptedResponse,
+      sharedSecret,
+    );
+
+    const activeWallets = decodeFetchActiveWalletResponse(decryptedData)
+
+    const validActiveWallets = validateActiveWallets(activeWallets)
+
+    this.activeWallets = validActiveWallets
+    this.ephemeralPub = newEphemeralPub;
+
+    return validActiveWallets;
+  }
+
   /** Get the active wallet */
   public get activeWallet () {
     if (
@@ -413,6 +445,14 @@ export class Client {
     return !!this.activeWallet;
   }
 
+  /**
+ * Reset the active wallets to empty values.
+ * @category Device Response
+ * @internal
+ */
+  private resetActiveWallets () {
+    this.activeWallets = DEFAULT_ACTIVE_WALLETS
+  }
   /**
    * `test` takes a data object with a testID and a payload, and sends them to the device.
    * @category Lattice

@@ -1,19 +1,19 @@
-import { getP256KeyPair } from '../../util';
-import { EXTERNAL } from '../../constants';
+import { getP256KeyPair } from '../../../util';
+import { EXTERNAL } from '../../../constants';
 import {
   encodeConnectRequest,
   encodeGetAddressesRequest,
   encodePairRequest,
   encodeSignRequest,
-} from '../encoders';
+} from '../../encoders';
 import {
   buildGetAddressesObject,
   buildTransactionObject,
   getFwVersionsList,
-} from './utils/builders';
+} from '../utils/builders';
 
 describe('encoders', () => {
-  describe('Client.connect()', () => {
+  describe('connect', () => {
     test('should test connect encoder', () => {
       const privKey = Buffer.alloc(32, '1');
       expect(privKey.toString()).toMatchSnapshot();
@@ -24,7 +24,7 @@ describe('encoders', () => {
     });
   });
 
-  describe('Client.pair()', () => {
+  describe('pair', () => {
     test('should test pair encoder', () => {
       const privKey = Buffer.alloc(32, '1');
       expect(privKey.toString()).toMatchSnapshot();
@@ -35,7 +35,7 @@ describe('encoders', () => {
     });
   });
 
-  describe('Client.getAddresses()', () => {
+  describe('getAddresses', () => {
     test('encodeGetAddressesRequest with default flag', () => {
       const mockObject = buildGetAddressesObject({});
       const payload = encodeGetAddressesRequest(mockObject);
@@ -72,7 +72,7 @@ describe('encoders', () => {
     });
   });
 
-  describe('Client.sign()', () => {
+  describe('sign', () => {
     test.each(getFwVersionsList())(
       'should test sign encoder with firmware v%d.%d.%d',
       (major, minor, patch) => {

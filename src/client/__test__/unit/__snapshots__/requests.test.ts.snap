@@ -1,6 +1,6 @@
 // Vitest Snapshot v1
 
-exports[`requests > Client.connect() > should test client 1`] = `
+exports[`requests > connect > should test client 1`] = `
 {
   "data": [
     1,
@@ -222,7 +222,7 @@ exports[`requests > Client.connect() > should test client 1`] = `
 }
 `;
 
-exports[`requests > Client.getAddresses() > should test client 1`] = `
+exports[`requests > getAddresses > should test client 1`] = `
 {
   "data": [
     93,

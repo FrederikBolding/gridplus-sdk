@@ -107,7 +107,7 @@ export const parseWallets = (walletData): ActiveWallets => {
 
 // Determine if a provided firmware version matches or exceeds the current firmware version
 export const isFWSupported = (
-  fwVersion: FirmwareVersion,
+  fwVersion: Buffer,
   versionSupported: FirmwareVersion,
 ): boolean => {
   const { major, minor, fix } = fwVersion;

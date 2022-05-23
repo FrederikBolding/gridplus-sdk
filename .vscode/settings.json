@@ -8,5 +8,6 @@
   "editor.showUnused": true,
   "editor.formatOnPaste": true,
   "editor.formatOnSave": true,
-  "cSpell.words": ["EPHEM", "SOLANA"]
+  "cSpell.words": ["EPHEM", "SOLANA"],
+  "testing.automaticallyOpenPeekView": "never"
 }

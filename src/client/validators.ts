@@ -29,7 +29,6 @@ export const validateConnectRequest = ({
   };
 };
 
-
 export const validateGetAddressesRequest = ({
   startPath,
   n,
@@ -53,6 +52,22 @@ export const validateGetAddressesRequest = ({
     url: validUrl,
     fwVersion: validFwVersion,
     wallet: validWallet,
+    ephemeralPub: validEphemeralPub,
+    sharedSecret: validSharedSecret,
+  };
+};
+
+export const validateFetchActiveWallet = ({
+  url,
+  ephemeralPub,
+  sharedSecret,
+}: ValidateFetchActiveWalletRequestParams) => {
+  const validUrl = validateUrl(url);
+  const validEphemeralPub = validateEphemeralPub(ephemeralPub);
+  const validSharedSecret = validateSharedSecret(sharedSecret);
+
+  return {
+    url: validUrl,
     ephemeralPub: validEphemeralPub,
     sharedSecret: validSharedSecret,
   };

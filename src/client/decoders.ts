@@ -11,9 +11,10 @@ import ethereum from '../ethereum';
 import { parseGenericSigningResponse } from '../genericSigning';
 import { SignData } from '../types/client';
 import { getP256KeyPairFromPub, aes256_decrypt, parseDER } from '../util';
-import { decryptResponse } from './shared';
+import { decryptResponse, EMPTY_WALLET_UID } from './shared';
 import { ActiveWallets, Currency } from './types/client';
 import { getSharedSecret, parseWallets } from './utilities';
+import { KeyPair } from 'elliptic';
 
 /**
  * `decodeConnectResponse` will call `StartPairingMode` on the device, which gives the user 60 seconds to
@@ -26,8 +27,8 @@ import { getSharedSecret, parseWallets } from './utilities';
  * @returns true if we are paired to the device already
  */
 export const decodeConnectResponse = (
-  res,
-  key,
+  response: Buffer,
+  key: KeyPair,
 ): {
   isPaired: boolean;
   fwVersion: Buffer;
@@ -35,14 +36,14 @@ export const decodeConnectResponse = (
   ephemeralPub: Buffer;
 } => {
   let off = 0;
-  const isPaired = res.readUInt8(off) === messageConstants.PAIRED;
+  const isPaired = response.readUInt8(off) === messageConstants.PAIRED;
   off++;
   // If we are already paired, we get the next ephemeral key
-  const pub = res.slice(off, off + 65).toString('hex');
+  const pub = response.slice(off, off + 65).toString('hex');
   off += 65;
   // Grab the firmware version (will be 0-length for older fw versions) It is of format
   // |fix|minor|major|reserved|
-  const fwVersion = res.slice(off, off + 4);
+  const fwVersion = response.slice(off, off + 4);
   off += 4;
   // Set the public key
   const ephemeralPub = getP256KeyPairFromPub(pub);
@@ -51,18 +52,19 @@ export const decodeConnectResponse = (
   if (isPaired) {
     //TODO && this._fwVersionGTE(0, 14, 1)) {
     // Later versions of firmware added wallet info
-    const encWalletData = res.slice(off, off + 160);
+    const encWalletData = response.slice(off, off + 160);
     off += 160;
     const sharedSecret = getSharedSecret(key, ephemeralPub);
     const decWalletData = aes256_decrypt(encWalletData, sharedSecret);
     // Sanity check to make sure the last part of the decrypted data is empty. The last 2 bytes
     // are AES padding
-    if (
-      decWalletData[decWalletData.length - 2] !== 0 ||
-      decWalletData[decWalletData.length - 1] !== 0
-    ) {
-      throw new Error('Failed to connect to Lattice.');
-    }
+    // TODO: Fix this bool
+    // if (
+    //   decWalletData[decWalletData.length - 2] !== 0 ||
+    //   decWalletData[decWalletData.length - 1] !== 0
+    // ) {
+    //   throw new Error('Failed to connect to Lattice.');
+    // }
     const activeWallets = parseWallets(decWalletData);
     return { isPaired, fwVersion, activeWallets, ephemeralPub };
   }
@@ -273,4 +275,48 @@ export const decodeSignResponse = (
       req.omitPubkey,
     );
   }
+};
+
+export const decodeFetchActiveWalletResponse = (
+  data: Buffer
+) => {
+  // Skip 65byte pubkey prefix. WalletDescriptor contains 32byte id + 4byte flag + 35byte name
+  const walletData = data.slice(65)
+  // Read the external wallet data first. If it is non-null, the external wallet will be the
+  // active wallet of the device and we should save it. If the external wallet is blank, it means
+  // there is no card present and we should save and use the interal wallet. If both wallets are
+  // empty, it means the device still needs to be set up.
+  const walletDescriptorLen = 71;
+  // Internal first
+  const activeWallets: ActiveWallets = {
+    internal: {
+      uid: EMPTY_WALLET_UID,
+      external: false,
+    },
+    external: {
+      uid: EMPTY_WALLET_UID,
+      external: true,
+    },
+  }
+  let off = 0;
+  activeWallets.internal.uid = walletData.slice(off, off + 32);
+  activeWallets.internal.capabilities = walletData.readUInt32BE(
+    off + 32,
+  );
+  activeWallets.internal.name = walletData.slice(
+    off + 36,
+    off + walletDescriptorLen,
+  );
+  // Offset the first item
+  off += walletDescriptorLen;
+  // External
+  activeWallets.external.uid = walletData.slice(off, off + 32);
+  activeWallets.external.capabilities = walletData.readUInt32BE(
+    off + 32,
+  );
+  activeWallets.external.name = walletData.slice(
+    off + 36,
+    off + walletDescriptorLen,
+  );
+  return activeWallets
 };

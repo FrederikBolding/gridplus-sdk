@@ -1,8 +1,8 @@
-import { validateConnectRequest, validateGetAddressesRequest } from '../validators';
-import { buildConnectObject, buildGetAddressesObject } from './utils/builders';
+import { validateConnectRequest, validateGetAddressesRequest } from '../../validators';
+import { buildConnectObject, buildGetAddressesObject } from '../utils/builders';
 
 describe('validators', () => {
-  describe('Client.connect()', () => {
+  describe('connect', () => {
     test('validateConnectRequest should successfully validate', async () => {
       const connectBundle = buildConnectObject({})
       expect(validateConnectRequest(connectBundle)).toMatchSnapshot();
@@ -14,7 +14,7 @@ describe('validators', () => {
     })
   })
 
-  describe('Client.getAddresses()', () => {
+  describe('getAddresses', () => {
     test('validateGetAddressesRequest should successfully validate', async () => {
       const getAddressesBundle = buildGetAddressesObject({})
       expect(validateGetAddressesRequest(getAddressesBundle)).toMatchSnapshot();

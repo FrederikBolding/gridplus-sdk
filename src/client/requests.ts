@@ -1,8 +1,6 @@
 import { request } from './shared';
 
-//TODO: add payload types for each request 
-
-export const requestConnect = async (payload: Buffer, url: string) => {
+export const requestConnect = async (payload: Buffer, url: string): Promise<Buffer> => {
   return request({ payload, url });
 };
 
@@ -18,3 +16,6 @@ export const requestSign = async (payload: Buffer, url: string) => {
   return request({ payload, url });
 };
 
+export const requestFetchActiveWallets = async (payload: Buffer, url: string) => {
+  return request({ payload, url });
+};

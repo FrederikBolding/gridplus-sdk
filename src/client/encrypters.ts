@@ -39,3 +39,15 @@ export const encryptSignRequest = (
     sharedSecret,
   });
 };
+
+export const encryptFetchActiveWallet = (
+  ephemeralPubKey: Buffer,
+  sharedSecret: Buffer,
+) => {
+  return encryptRequest({
+    requestCode: encReqCodes.GET_WALLETS,
+    payload: Buffer.alloc(0),
+    ephemeralPubKey,
+    sharedSecret,
+  });
+};

@@ -1,4 +1,6 @@
+import { CURRENCIES } from '../../../constants';
 import { getP256KeyPair } from '../../../util';
+import { Currency, EncodeSignRequestParams } from '../../types/client';
 
 export const getFwVersionsList = () => {
   const arr: number[][] = [];
@@ -38,7 +40,7 @@ export const buildGetAddressesObject = ({ ...overrides }) => ({
   ...overrides
 })
 
-export const buildTransactionObject = ({ ...overrides }) => ({
+export const buildTransactionObject = ({ ...overrides }): EncodeSignRequestParams => ({
   data: {
     to: '0xc0c8f96C2fE011cc96770D2e37CfbfeAFB585F0e',
     from: '0xc0c8f96C2fE011cc96770D2e37CfbfeAFB585F0e',
@@ -49,7 +51,7 @@ export const buildTransactionObject = ({ ...overrides }) => ({
     gasLimit: 0x80000000,
     gasPrice: 0x80000000,
   },
-  currency: 'ETH',
+  currency: CURRENCIES.ETH as Currency,
   fwVersion: Buffer.from([0, 0, 0]),
   wallet: {
     uid: Buffer.from('test'),

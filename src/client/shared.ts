@@ -21,6 +21,9 @@ import { shouldUseEVMLegacyConverter } from './predicates';
 import { Currency, EncryptRequestParams, RequestParams } from './types/client';
 import { validateRequestError, validateResponse, validateChecksum } from './validationFunctions';
 
+
+export const EMPTY_WALLET_UID = Buffer.alloc(32);
+
 /**
  * Build a request to send to the device.
  * @internal
@@ -190,7 +193,7 @@ export const request = async ({
  * @internal
  */
 export const decryptResponse = (
-  encryptedResponse: any, //TODO: add type for responses
+  encryptedResponse: Buffer, //TODO: add type for responses
   length: number,
   sharedSecret: Buffer,
 ): { decryptedData: Buffer, newEphemeralPub: Buffer } => {

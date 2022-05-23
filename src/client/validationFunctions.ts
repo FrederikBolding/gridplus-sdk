@@ -3,7 +3,8 @@ import { UInt4 } from 'bitwise/types';
 import { KeyPair } from 'elliptic';
 import { encReqCodes, MAX_ADDR } from '../constants';
 import { checksum, isUInt4 } from '../util';
-import { Wallet } from './types/client';
+import { EMPTY_WALLET_UID } from './shared';
+import { ActiveWallets, Wallet } from './types/client';
 
 export const validateValueExists = (arg: { [key: string]: any }) => {
   const [key, [, value]] = Object.entries(arg);
@@ -137,4 +138,15 @@ export const validateKey = (key?: KeyPair | undefined) => {
     throw new Error('Key is required. Please reconnect.');
   }
   return key;
+};
+
+export const validateActiveWallets = (activeWallets?: ActiveWallets | undefined) => {
+  if (
+    !activeWallets ||
+    activeWallets?.internal?.uid?.equals(EMPTY_WALLET_UID) &&
+    activeWallets?.external?.uid?.equals(EMPTY_WALLET_UID)
+  ) {
+    throw new Error('No active wallet.');
+  }
+  return activeWallets;
 };

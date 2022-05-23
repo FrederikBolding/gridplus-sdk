@@ -1,6 +1,6 @@
 // Vitest Snapshot v1
 
-exports[`Client > encryptGetAddressesRequest should encrypt requests 1`] = `
+exports[`encrypters > getAddresses > encryptGetAddressesRequest should encrypt requests 1`] = `
 {
   "data": [
     1,

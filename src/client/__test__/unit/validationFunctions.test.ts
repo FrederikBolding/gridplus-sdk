@@ -1,4 +1,4 @@
-import { validateIsUInt4 } from '../validationFunctions';
+import { validateIsUInt4 } from '../../validationFunctions';
 
 
 

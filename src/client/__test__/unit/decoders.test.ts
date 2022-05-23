@@ -1,4 +1,4 @@
-import { decodeGetAddresses } from '../decoders';
+import { decodeGetAddresses } from '../../decoders';
 
 describe('Client', () => {
   it('should test client', () => {

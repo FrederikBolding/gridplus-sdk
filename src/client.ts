@@ -790,7 +790,7 @@ export class Client {
    * @internal
    * @returns The response code.
    */
-  private async _request (payload, encReqCode = null, retryCount = this.retryCount): Promise<Buffer> {
+  private async _request (payload: Buffer, encReqCode = null, retryCount = this.retryCount): Promise<Buffer> {
     if (!this.deviceId) {
       throw new Error('Device ID is not set. Please set it and try again.');
     } else if (encReqCode && encReqCodes[encReqCode] === undefined) {
